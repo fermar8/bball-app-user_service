@@ -233,6 +233,8 @@ jobs:
     permissions:
       contents: write
     env:
+      # Suppress Node.js 16/20 deprecation warnings from third-party actions (e.g. softprops/action-gh-release)
+      # Remove once all actions have been updated to Node.js 24 runners.
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
