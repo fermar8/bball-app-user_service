@@ -77,7 +77,10 @@ export class CognitoAuthGuard implements CanActivate {
 
       const kid = decoded.header.kid;
       if (!kid || !this.jwksClient) {
-        // In test/dev environments without Cognito, decode without verification
+        // Allow unverified tokens only in non-production environments (e.g. local dev)
+        if (process.env.NODE_ENV === 'production') {
+          return reject(new Error('Token missing kid claim; verification required in production'));
+        }
         return resolve(decoded.payload);
       }
 
