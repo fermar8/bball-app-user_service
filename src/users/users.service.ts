@@ -33,7 +33,9 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
-    const items = await this.dynamoDbService.scan({ TableName: this.tableName });
+    const items = await this.dynamoDbService.scan({
+      TableName: this.tableName,
+    });
     return items as User[];
   }
 
@@ -64,7 +66,9 @@ export class UsersService {
   async create(dto: CreateUserDto): Promise<User> {
     const existing = await this.findByEmail(dto.email).catch(() => null);
     if (existing) {
-      throw new ConflictException(`User with email ${dto.email} already exists`);
+      throw new ConflictException(
+        `User with email ${dto.email} already exists`,
+      );
     }
 
     const now = new Date().toISOString();

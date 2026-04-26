@@ -6,7 +6,10 @@ export class ConfirmRegistrationDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: '123456', description: 'Confirmation code from email' })
+  @ApiProperty({
+    example: '123456',
+    description: 'Confirmation code from email',
+  })
   @IsString()
   @Length(6, 6)
   confirmationCode: string;

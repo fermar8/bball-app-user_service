@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CognitoService } from '../aws/cognito/cognito.service';
 
@@ -53,7 +57,11 @@ describe('AuthService', () => {
       mockCognitoService.signUp.mockRejectedValue(error);
 
       await expect(
-        service.register({ email: 'existing@example.com', password: 'Password123!', name: 'Test' }),
+        service.register({
+          email: 'existing@example.com',
+          password: 'Password123!',
+          name: 'Test',
+        }),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -63,7 +71,11 @@ describe('AuthService', () => {
       mockCognitoService.signUp.mockRejectedValue(error);
 
       await expect(
-        service.register({ email: 'test@example.com', password: 'weak', name: 'Test' }),
+        service.register({
+          email: 'test@example.com',
+          password: 'weak',
+          name: 'Test',
+        }),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -102,7 +114,10 @@ describe('AuthService', () => {
       mockCognitoService.signIn.mockRejectedValue(error);
 
       await expect(
-        service.login({ email: 'unknown@example.com', password: 'Password123!' }),
+        service.login({
+          email: 'unknown@example.com',
+          password: 'Password123!',
+        }),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -112,7 +127,10 @@ describe('AuthService', () => {
       mockCognitoService.signIn.mockRejectedValue(error);
 
       await expect(
-        service.login({ email: 'unconfirmed@example.com', password: 'Password123!' }),
+        service.login({
+          email: 'unconfirmed@example.com',
+          password: 'Password123!',
+        }),
       ).rejects.toThrow(UnauthorizedException);
     });
   });
@@ -135,7 +153,10 @@ describe('AuthService', () => {
       mockCognitoService.confirmSignUp.mockRejectedValue(error);
 
       await expect(
-        service.confirmRegistration({ email: 'test@example.com', confirmationCode: '000000' }),
+        service.confirmRegistration({
+          email: 'test@example.com',
+          confirmationCode: '000000',
+        }),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -143,13 +164,19 @@ describe('AuthService', () => {
   describe('forgotPassword', () => {
     it('should return generic message regardless of outcome', async () => {
       mockCognitoService.forgotPassword.mockResolvedValue(undefined);
-      const result = await service.forgotPassword({ email: 'test@example.com' });
+      const result = await service.forgotPassword({
+        email: 'test@example.com',
+      });
       expect(result.message).toBeDefined();
     });
 
     it('should return generic message even on error (email enumeration protection)', async () => {
-      mockCognitoService.forgotPassword.mockRejectedValue(new Error('User not found'));
-      const result = await service.forgotPassword({ email: 'nonexistent@example.com' });
+      mockCognitoService.forgotPassword.mockRejectedValue(
+        new Error('User not found'),
+      );
+      const result = await service.forgotPassword({
+        email: 'nonexistent@example.com',
+      });
       expect(result.message).toBeDefined();
     });
   });

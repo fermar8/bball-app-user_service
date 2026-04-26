@@ -67,7 +67,9 @@ describe('UsersService', () => {
 
     it('should throw NotFoundException when user not found', async () => {
       mockDynamoDbService.getItem.mockResolvedValue(null);
-      await expect(service.findOne('nonexistent-id')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('nonexistent-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -102,15 +104,17 @@ describe('UsersService', () => {
       const updatedUser = { ...mockUser, name: 'Updated Name' };
       mockDynamoDbService.updateItem.mockResolvedValue(updatedUser);
 
-      const result = await service.update('test-uuid-123', { name: 'Updated Name' });
+      const result = await service.update('test-uuid-123', {
+        name: 'Updated Name',
+      });
       expect(result).toEqual(updatedUser);
     });
 
     it('should throw NotFoundException when user to update does not exist', async () => {
       mockDynamoDbService.getItem.mockResolvedValue(null);
-      await expect(service.update('nonexistent-id', { name: 'Updated' })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update('nonexistent-id', { name: 'Updated' }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -128,7 +132,9 @@ describe('UsersService', () => {
 
     it('should throw NotFoundException when user to delete does not exist', async () => {
       mockDynamoDbService.getItem.mockResolvedValue(null);
-      await expect(service.remove('nonexistent-id')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('nonexistent-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

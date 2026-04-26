@@ -25,7 +25,9 @@ export class LoggingInterceptor implements NestInterceptor {
         },
         error: (error) => {
           const duration = Date.now() - start;
-          this.logger.error(`${method} ${url} - ${duration}ms - ${error.message}`);
+          this.logger.error(
+            `${method} ${url} - ${duration}ms - ${error.message}`,
+          );
         },
       }),
     );

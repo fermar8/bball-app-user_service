@@ -40,7 +40,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Confirm user registration with code from email' })
   @ApiResponse({ status: 200, description: 'Account confirmed successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid or expired confirmation code' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid or expired confirmation code',
+  })
   async confirmRegistration(@Body() dto: ConfirmRegistrationDto) {
     return this.authService.confirmRegistration(dto);
   }
@@ -49,7 +52,10 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Sign in and obtain JWT tokens' })
-  @ApiResponse({ status: 200, description: 'Login successful, returns JWT tokens' })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful, returns JWT tokens',
+  })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
@@ -69,7 +75,10 @@ export class AuthController {
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Initiate password reset flow' })
-  @ApiResponse({ status: 200, description: 'Password reset email sent if account exists' })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset email sent if account exists',
+  })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto);
   }

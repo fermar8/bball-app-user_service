@@ -40,7 +40,10 @@ export class DynamoDbService {
       return result.Item || null;
     } catch (error: unknown) {
       if (error instanceof Error) {
-        this.logger.error(`DynamoDB getItem error: ${error.message}`, error.stack);
+        this.logger.error(
+          `DynamoDB getItem error: ${error.message}`,
+          error.stack,
+        );
       } else {
         this.logger.error(`DynamoDB getItem error: ${String(error)}`);
       }
@@ -53,7 +56,10 @@ export class DynamoDbService {
       await this.docClient.send(new PutCommand(params));
     } catch (error: unknown) {
       if (error instanceof Error) {
-        this.logger.error(`DynamoDB putItem error: ${error.message}`, error.stack);
+        this.logger.error(
+          `DynamoDB putItem error: ${error.message}`,
+          error.stack,
+        );
       } else {
         this.logger.error(`DynamoDB putItem error: ${String(error)}`);
       }
@@ -67,7 +73,10 @@ export class DynamoDbService {
       return result.Attributes || {};
     } catch (error: unknown) {
       if (error instanceof Error) {
-        this.logger.error(`DynamoDB updateItem error: ${error.message}`, error.stack);
+        this.logger.error(
+          `DynamoDB updateItem error: ${error.message}`,
+          error.stack,
+        );
       } else {
         this.logger.error(`DynamoDB updateItem error: ${String(error)}`);
       }
@@ -80,7 +89,10 @@ export class DynamoDbService {
       await this.docClient.send(new DeleteCommand(params));
     } catch (error: unknown) {
       if (error instanceof Error) {
-        this.logger.error(`DynamoDB deleteItem error: ${error.message}`, error.stack);
+        this.logger.error(
+          `DynamoDB deleteItem error: ${error.message}`,
+          error.stack,
+        );
       } else {
         this.logger.error(`DynamoDB deleteItem error: ${String(error)}`);
       }
@@ -108,7 +120,10 @@ export class DynamoDbService {
       return result.Items || [];
     } catch (error: unknown) {
       if (error instanceof Error) {
-        this.logger.error(`DynamoDB query error: ${error.message}`, error.stack);
+        this.logger.error(
+          `DynamoDB query error: ${error.message}`,
+          error.stack,
+        );
       } else {
         this.logger.error(`DynamoDB query error: ${String(error)}`);
       }
