@@ -21,10 +21,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.4.0
         with:
           node-version: '24'
           cache: 'npm'
@@ -45,7 +45,7 @@ jobs:
         run: npm run build
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: dist
           path: dist/
@@ -61,16 +61,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
           role-to-assume: ${{ vars.AWS_PIPELINE_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION || 'eu-west-3' }}
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ~1.0
 
@@ -110,7 +110,7 @@ jobs:
             -auto-approve -no-color
 
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
           name: dist
           path: dist/
@@ -129,16 +129,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
           role-to-assume: ${{ vars.AWS_PIPELINE_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION || 'eu-west-3' }}
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ~1.0
 
@@ -170,7 +170,7 @@ jobs:
         run: terraform apply -var-file="live.tfvars" -var='alarm_emails=${{ secrets.ALARM_EMAILS }}' -auto-approve -no-color
 
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
           name: dist
           path: dist/
@@ -184,19 +184,15 @@ jobs:
     needs: deploy-live
     permissions:
       contents: write
-    env:
-      # Suppress Node.js 16/20 deprecation warnings from third-party actions (e.g. softprops/action-gh-release)
-      # Remove once all actions have been updated to Node.js 24 runners.
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
 
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
           name: dist
           path: dist/
@@ -226,7 +222,7 @@ jobs:
           echo "version_number=${MAJOR}.${MINOR}.${PATCH}" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.0
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: Release ${{ steps.version.outputs.version }}
@@ -238,7 +234,7 @@ jobs:
             ### Build Information
             - Commit: ${{ github.sha }}
             - Branch: ${{ github.ref_name }}
-            - Node.js Version: 20
+            - Node.js Version: 24
             - Runtime: EC2 (Node.js + PM2)
 
             ### Deployment
