@@ -8,14 +8,15 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import * as jwt from 'jsonwebtoken';
-import * as jwksClient from 'jwks-rsa';
+import jwksClient, { type JwksClient } from 'jwks-rsa';
 
 export const IS_PUBLIC_KEY = 'isPublic';
+const PRODUCTION_NODE_ENV = 'production';
 
 @Injectable()
 export class CognitoAuthGuard implements CanActivate {
   private readonly logger = new Logger(CognitoAuthGuard.name);
-  private readonly jwksClient: jwksClient.JwksClient;
+  private readonly jwksClient: JwksClient;
   private readonly userPoolId: string;
   private readonly region: string;
 
@@ -57,8 +58,12 @@ export class CognitoAuthGuard implements CanActivate {
       const payload = await this.verifyToken(token);
       request['user'] = payload;
       return true;
-    } catch (error) {
-      this.logger.warn(`Token verification failed: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.warn(`Token verification failed: ${error.message}`);
+      } else {
+        this.logger.warn(`Token verification failed: ${String(error)}`);
+      }
       throw new UnauthorizedException('Invalid or expired token');
     }
   }
@@ -78,8 +83,12 @@ export class CognitoAuthGuard implements CanActivate {
       const kid = decoded.header.kid;
       if (!kid || !this.jwksClient) {
         // Allow unverified tokens only in non-production environments (e.g. local dev)
-        if (process.env.NODE_ENV === 'production') {
-          return reject(new Error('Token missing kid claim; verification required in production'));
+        if (process.env.NODE_ENV === PRODUCTION_NODE_ENV) {
+          return reject(
+            new Error(
+              'Token missing kid claim; verification required in production',
+            ),
+          );
         }
         return resolve(decoded.payload);
       }
@@ -89,12 +98,17 @@ export class CognitoAuthGuard implements CanActivate {
           return reject(new Error(`Unable to get signing key: ${err.message}`));
         }
         const signingKey = key.getPublicKey();
-        jwt.verify(token, signingKey, { algorithms: ['RS256'] }, (verifyErr, payload) => {
-          if (verifyErr) {
-            return reject(verifyErr);
-          }
-          resolve(payload);
-        });
+        jwt.verify(
+          token,
+          signingKey,
+          { algorithms: ['RS256'] },
+          (verifyErr, payload) => {
+            if (verifyErr) {
+              return reject(verifyErr);
+            }
+            resolve(payload);
+          },
+        );
       });
     });
   }

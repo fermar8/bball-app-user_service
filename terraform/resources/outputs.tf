@@ -1,11 +1,15 @@
+locals {
+  app_public_ip = length(aws_eip.app_eip) > 0 ? aws_eip.app_eip[0].public_ip : aws_instance.app_server.public_ip
+}
+
 output "ec2_instance_id" {
   description = "EC2 instance ID"
   value       = aws_instance.app_server.id
 }
 
 output "ec2_public_ip" {
-  description = "Public IP address of the EC2 instance"
-  value       = aws_eip.app_eip.public_ip
+  description = "Public IP address of the EC2 instance (EIP when allocated, otherwise ephemeral public IP)"
+  value       = local.app_public_ip
 }
 
 output "ec2_public_dns" {
@@ -14,8 +18,8 @@ output "ec2_public_dns" {
 }
 
 output "api_endpoint" {
-  description = "API endpoint URL"
-  value       = "http://${aws_eip.app_eip.public_ip}:${var.app_port}/api/v1"
+  description = "API endpoint URL (null when no public IP is available)"
+  value       = local.app_public_ip != null ? "http://${local.app_public_ip}:${var.app_port}/api/v1" : null
 }
 
 output "cognito_user_pool_id" {

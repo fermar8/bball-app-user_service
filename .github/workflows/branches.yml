@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -33,10 +33,10 @@ jobs:
         run: npm run lint
 
       - name: Run unit tests
-        run: npm test -- --passWithNoTests
+        run: npm test
 
       - name: Run e2e tests
-        run: npm run test:e2e -- --passWithNoTests
+        run: npm run test:e2e
 
       - name: Build application
         run: npm run build

@@ -4,13 +4,13 @@ set -e
 # Update system
 yum update -y
 
-# Install Node.js 20 via nvm
+# Install Node.js 24 via nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 export NVM_DIR="/root/.nvm"
 source "$NVM_DIR/nvm.sh"
-nvm install 20
-nvm use 20
-nvm alias default 20
+nvm install 24
+nvm use 24
+nvm alias default 24
 
 # Create symlinks so node/npm are available system-wide
 ln -sf "$(which node)" /usr/local/bin/node

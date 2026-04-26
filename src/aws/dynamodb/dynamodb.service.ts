@@ -38,8 +38,12 @@ export class DynamoDbService {
     try {
       const result = await this.docClient.send(new GetCommand(params));
       return result.Item || null;
-    } catch (error) {
-      this.logger.error(`DynamoDB getItem error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(`DynamoDB getItem error: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`DynamoDB getItem error: ${String(error)}`);
+      }
       throw error;
     }
   }
@@ -47,8 +51,12 @@ export class DynamoDbService {
   async putItem(params: PutCommandInput): Promise<void> {
     try {
       await this.docClient.send(new PutCommand(params));
-    } catch (error) {
-      this.logger.error(`DynamoDB putItem error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(`DynamoDB putItem error: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`DynamoDB putItem error: ${String(error)}`);
+      }
       throw error;
     }
   }
@@ -57,8 +65,12 @@ export class DynamoDbService {
     try {
       const result = await this.docClient.send(new UpdateCommand(params));
       return result.Attributes || {};
-    } catch (error) {
-      this.logger.error(`DynamoDB updateItem error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(`DynamoDB updateItem error: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`DynamoDB updateItem error: ${String(error)}`);
+      }
       throw error;
     }
   }
@@ -66,8 +78,12 @@ export class DynamoDbService {
   async deleteItem(params: DeleteCommandInput): Promise<void> {
     try {
       await this.docClient.send(new DeleteCommand(params));
-    } catch (error) {
-      this.logger.error(`DynamoDB deleteItem error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(`DynamoDB deleteItem error: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`DynamoDB deleteItem error: ${String(error)}`);
+      }
       throw error;
     }
   }
@@ -76,8 +92,12 @@ export class DynamoDbService {
     try {
       const result = await this.docClient.send(new ScanCommand(params));
       return result.Items || [];
-    } catch (error) {
-      this.logger.error(`DynamoDB scan error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(`DynamoDB scan error: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`DynamoDB scan error: ${String(error)}`);
+      }
       throw error;
     }
   }
@@ -86,8 +106,12 @@ export class DynamoDbService {
     try {
       const result = await this.docClient.send(new QueryCommand(params));
       return result.Items || [];
-    } catch (error) {
-      this.logger.error(`DynamoDB query error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(`DynamoDB query error: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`DynamoDB query error: ${String(error)}`);
+      }
       throw error;
     }
   }

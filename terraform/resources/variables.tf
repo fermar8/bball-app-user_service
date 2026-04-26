@@ -26,6 +26,18 @@ variable "ec2_instance_type" {
   default     = "t3.micro"
 }
 
+variable "ec2_auto_start" {
+  description = "Whether EC2 should be running after apply (set true only when actively testing)"
+  type        = bool
+  default     = false
+}
+
+variable "create_ec2_eip" {
+  description = "Whether to allocate and attach an Elastic IP to EC2 (set true only when actively testing to avoid idle IPv4 charges)"
+  type        = bool
+  default     = false
+}
+
 variable "ec2_key_pair_name" {
   description = "EC2 key pair name for SSH access"
   type        = string
@@ -60,12 +72,6 @@ variable "public_subnet_cidr" {
   description = "CIDR block for the public subnet"
   type        = string
   default     = "10.0.1.0/24"
-}
-
-variable "allowed_ssh_cidrs" {
-  description = "CIDR blocks allowed to SSH into the EC2 instance"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
 }
 
 variable "tags" {

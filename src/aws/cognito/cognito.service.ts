@@ -26,7 +26,11 @@ export class CognitoService {
     this.clientId = this.configService.get<string>('aws.cognito.clientId');
   }
 
-  async signUp(email: string, password: string, name: string): Promise<{ userSub: string }> {
+  async signUp(
+    email: string,
+    password: string,
+    name: string,
+  ): Promise<{ userSub: string }> {
     try {
       const command = new SignUpCommand({
         ClientId: this.clientId,
@@ -39,8 +43,15 @@ export class CognitoService {
       });
       const result = await this.client.send(command);
       return { userSub: result.UserSub };
-    } catch (error) {
-      this.logger.error(`Cognito signUp error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Cognito signUp error: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this.logger.error(`Cognito signUp error: ${String(error)}`);
+      }
       throw error;
     }
   }
@@ -53,13 +64,23 @@ export class CognitoService {
         ConfirmationCode: confirmationCode,
       });
       await this.client.send(command);
-    } catch (error) {
-      this.logger.error(`Cognito confirmSignUp error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Cognito confirmSignUp error: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this.logger.error(`Cognito confirmSignUp error: ${String(error)}`);
+      }
       throw error;
     }
   }
 
-  async signIn(email: string, password: string): Promise<{
+  async signIn(
+    email: string,
+    password: string,
+  ): Promise<{
     accessToken: string;
     idToken: string;
     refreshToken: string;
@@ -82,8 +103,15 @@ export class CognitoService {
         refreshToken: authResult.RefreshToken,
         expiresIn: authResult.ExpiresIn,
       };
-    } catch (error) {
-      this.logger.error(`Cognito signIn error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Cognito signIn error: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this.logger.error(`Cognito signIn error: ${String(error)}`);
+      }
       throw error;
     }
   }
@@ -108,8 +136,15 @@ export class CognitoService {
         idToken: authResult.IdToken,
         expiresIn: authResult.ExpiresIn,
       };
-    } catch (error) {
-      this.logger.error(`Cognito refreshToken error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Cognito refreshToken error: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this.logger.error(`Cognito refreshToken error: ${String(error)}`);
+      }
       throw error;
     }
   }
@@ -121,8 +156,15 @@ export class CognitoService {
         Username: email,
       });
       await this.client.send(command);
-    } catch (error) {
-      this.logger.error(`Cognito forgotPassword error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Cognito forgotPassword error: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this.logger.error(`Cognito forgotPassword error: ${String(error)}`);
+      }
       throw error;
     }
   }
@@ -140,8 +182,17 @@ export class CognitoService {
         Password: newPassword,
       });
       await this.client.send(command);
-    } catch (error) {
-      this.logger.error(`Cognito confirmForgotPassword error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Cognito confirmForgotPassword error: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this.logger.error(
+          `Cognito confirmForgotPassword error: ${String(error)}`,
+        );
+      }
       throw error;
     }
   }
@@ -150,8 +201,15 @@ export class CognitoService {
     try {
       const command = new GlobalSignOutCommand({ AccessToken: accessToken });
       await this.client.send(command);
-    } catch (error) {
-      this.logger.error(`Cognito signOut error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Cognito signOut error: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this.logger.error(`Cognito signOut error: ${String(error)}`);
+      }
       throw error;
     }
   }

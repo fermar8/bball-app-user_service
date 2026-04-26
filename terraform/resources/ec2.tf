@@ -15,8 +15,8 @@ data "aws_ami" "amazon_linux_2023" {
 }
 
 # EC2 instance for the NestJS user service
-# nonlive: running (for testing)
-# live: stopped by default until the service is live
+# nonlive/live: stopped by default
+# set var.ec2_auto_start=true only when actively testing
 resource "aws_instance" "app_server" {
   ami                    = data.aws_ami.amazon_linux_2023.id
   instance_type          = var.ec2_instance_type
@@ -47,9 +47,14 @@ resource "aws_instance" "app_server" {
   tags = merge(var.tags, {
     Name        = "${var.project_name}-server-${var.environment}"
     Environment = var.environment
-    # Tag to identify if instance should be running
-    AutoStart = var.environment == "nonlive" ? "true" : "false"
+    # Tag to identify if instance should be running automatically
+    AutoStart = var.ec2_auto_start ? "true" : "false"
   })
+}
+
+resource "aws_ec2_instance_state" "app_server" {
+  instance_id = aws_instance.app_server.id
+  state       = var.ec2_auto_start ? "running" : "stopped"
 }
 
 # CloudWatch agent configuration SSM parameter

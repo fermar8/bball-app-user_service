@@ -2,6 +2,12 @@ name: Main CI - Build, Test, Deploy, and Release
 
 on:
   workflow_dispatch:
+    inputs:
+      nonlive_testing_mode:
+        description: 'Enable nonlive testing mode (start EC2 + allocate EIP). Re-run with this OFF when done.'
+        required: false
+        default: false
+        type: boolean
   push:
     branches:
       - main
@@ -20,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -30,10 +36,10 @@ jobs:
         run: npm run lint
 
       - name: Run unit tests
-        run: npm test -- --passWithNoTests
+        run: npm test
 
       - name: Run e2e tests
-        run: npm run test:e2e -- --passWithNoTests
+        run: npm run test:e2e
 
       - name: Build application
         run: npm run build
@@ -89,11 +95,19 @@ jobs:
 
       - name: Terraform Plan
         working-directory: ./terraform/resources
-        run: terraform plan -var-file="nonlive.tfvars" -no-color
+        run: |
+          terraform plan -var-file="nonlive.tfvars" \
+            -var="ec2_auto_start=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.nonlive_testing_mode == 'true' || false }}" \
+            -var="create_ec2_eip=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.nonlive_testing_mode == 'true' || false }}" \
+            -no-color
 
       - name: Terraform Apply
         working-directory: ./terraform/resources
-        run: terraform apply -var-file="nonlive.tfvars" -auto-approve -no-color
+        run: |
+          terraform apply -var-file="nonlive.tfvars" \
+            -var="ec2_auto_start=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.nonlive_testing_mode == 'true' || false }}" \
+            -var="create_ec2_eip=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.nonlive_testing_mode == 'true' || false }}" \
+            -auto-approve -no-color
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -102,38 +116,7 @@ jobs:
           path: dist/
 
       - name: Deploy application to nonlive EC2
-        run: |
-          INSTANCE_ID=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=bball-app-user-service-server-nonlive" \
-                      "Name=instance-state-name,Values=running" \
-            --query "Reservations[0].Instances[0].InstanceId" \
-            --output text)
-
-          if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
-            echo "No running nonlive instance found. Infrastructure may not be deployed yet."
-            exit 0
-          fi
-
-          echo "Deploying to instance: $INSTANCE_ID"
-
-          # Create deployment package
-          zip -r app.zip dist/ package.json package-lock.json
-
-          # Upload to S3 and deploy via SSM
-          aws s3 cp app.zip s3://${{ vars.DEPLOYMENT_BUCKET }}/bball-app-user-service/nonlive/app.zip
-
-          aws ssm send-command \
-            --instance-ids "$INSTANCE_ID" \
-            --document-name "AWS-RunShellScript" \
-            --parameters 'commands=[
-              "cd /opt/bball-app-user-service",
-              "aws s3 cp s3://${{ vars.DEPLOYMENT_BUCKET }}/bball-app-user-service/nonlive/app.zip .",
-              "unzip -o app.zip",
-              "npm ci --production",
-              "pm2 restart bball-app-user-service || pm2 start dist/main.js --name bball-app-user-service",
-              "pm2 save"
-            ]' \
-            --output text
+        run: bash scripts/deploy.sh nonlive ${{ vars.DEPLOYMENT_BUCKET }} 0
 
   deploy-live:
     name: Deploy to Live (Production)
@@ -193,38 +176,7 @@ jobs:
           path: dist/
 
       - name: Deploy application to live EC2
-        run: |
-          INSTANCE_ID=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=bball-app-user-service-server-live" \
-                      "Name=instance-state-name,Values=running" \
-            --query "Reservations[0].Instances[0].InstanceId" \
-            --output text)
-
-          if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
-            echo "No running live instance found. Start the instance before deploying."
-            exit 1
-          fi
-
-          echo "Deploying to live instance: $INSTANCE_ID"
-
-          # Create deployment package
-          zip -r app.zip dist/ package.json package-lock.json
-
-          # Upload to S3 and deploy via SSM
-          aws s3 cp app.zip s3://${{ vars.DEPLOYMENT_BUCKET }}/bball-app-user-service/live/app.zip
-
-          aws ssm send-command \
-            --instance-ids "$INSTANCE_ID" \
-            --document-name "AWS-RunShellScript" \
-            --parameters 'commands=[
-              "cd /opt/bball-app-user-service",
-              "aws s3 cp s3://${{ vars.DEPLOYMENT_BUCKET }}/bball-app-user-service/live/app.zip .",
-              "unzip -o app.zip",
-              "npm ci --production",
-              "pm2 restart bball-app-user-service || pm2 start dist/main.js --name bball-app-user-service",
-              "pm2 save"
-            ]' \
-            --output text
+        run: bash scripts/deploy.sh live ${{ vars.DEPLOYMENT_BUCKET }} 1
 
   create-release:
     name: Create GitHub Release

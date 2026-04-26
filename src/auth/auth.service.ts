@@ -5,6 +5,15 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import {
+  CodeMismatchException,
+  ExpiredCodeException,
+  InvalidPasswordException,
+  NotAuthorizedException,
+  UserNotConfirmedException,
+  UserNotFoundException,
+  UsernameExistsException,
+} from '@aws-sdk/client-cognito-identity-provider';
 import { CognitoService } from '../aws/cognito/cognito.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -19,37 +28,86 @@ export class AuthService {
 
   constructor(private readonly cognitoService: CognitoService) {}
 
-  async register(dto: RegisterDto): Promise<{ message: string; userSub: string }> {
+  private isCognitoError(error: unknown, errorName: string): boolean {
+    return (
+      error instanceof Error &&
+      (error.name === errorName || error.constructor?.name === errorName)
+    );
+  }
+
+  private getErrorMessage(error: unknown, fallback: string): string {
+    return error instanceof Error ? error.message : fallback;
+  }
+
+  async register(
+    dto: RegisterDto,
+  ): Promise<{ message: string; userSub: string }> {
     try {
-      const result = await this.cognitoService.signUp(dto.email, dto.password, dto.name);
+      const result = await this.cognitoService.signUp(
+        dto.email,
+        dto.password,
+        dto.name,
+      );
       return {
-        message: 'Registration successful. Please check your email for the confirmation code.',
+        message:
+          'Registration successful. Please check your email for the confirmation code.',
         userSub: result.userSub,
       };
-    } catch (error) {
-      if (error.name === 'UsernameExistsException') {
-        throw new ConflictException('An account with this email already exists');
+    } catch (error: unknown) {
+      if (
+        error instanceof UsernameExistsException ||
+        this.isCognitoError(error, 'UsernameExistsException')
+      ) {
+        throw new ConflictException(
+          'An account with this email already exists',
+        );
       }
-      if (error.name === 'InvalidPasswordException') {
-        throw new BadRequestException(error.message);
+      if (
+        error instanceof InvalidPasswordException ||
+        this.isCognitoError(error, 'InvalidPasswordException')
+      ) {
+        throw new BadRequestException(
+          this.getErrorMessage(error, 'Invalid password'),
+        );
       }
-      this.logger.error(`Registration error: ${error.message}`, error.stack);
+      if (error instanceof Error) {
+        this.logger.error(`Registration error: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`Registration error: ${String(error)}`);
+      }
       throw error;
     }
   }
 
-  async confirmRegistration(dto: ConfirmRegistrationDto): Promise<{ message: string }> {
+  async confirmRegistration(
+    dto: ConfirmRegistrationDto,
+  ): Promise<{ message: string }> {
     try {
       await this.cognitoService.confirmSignUp(dto.email, dto.confirmationCode);
-      return { message: 'Account confirmed successfully. You can now sign in.' };
-    } catch (error) {
-      if (error.name === 'CodeMismatchException') {
+      return {
+        message: 'Account confirmed successfully. You can now sign in.',
+      };
+    } catch (error: unknown) {
+      if (
+        error instanceof CodeMismatchException ||
+        this.isCognitoError(error, 'CodeMismatchException')
+      ) {
         throw new BadRequestException('Invalid confirmation code');
       }
-      if (error.name === 'ExpiredCodeException') {
+      if (
+        error instanceof ExpiredCodeException ||
+        this.isCognitoError(error, 'ExpiredCodeException')
+      ) {
         throw new BadRequestException('Confirmation code has expired');
       }
-      this.logger.error(`Confirm registration error: ${error.message}`, error.stack);
+      if (error instanceof Error) {
+        this.logger.error(
+          `Confirm registration error: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this.logger.error(`Confirm registration error: ${String(error)}`);
+      }
       throw error;
     }
   }
@@ -62,17 +120,28 @@ export class AuthService {
   }> {
     try {
       return await this.cognitoService.signIn(dto.email, dto.password);
-    } catch (error) {
+    } catch (error: unknown) {
       if (
-        error.name === 'NotAuthorizedException' ||
-        error.name === 'UserNotFoundException'
+        error instanceof NotAuthorizedException ||
+        error instanceof UserNotFoundException ||
+        this.isCognitoError(error, 'NotAuthorizedException') ||
+        this.isCognitoError(error, 'UserNotFoundException')
       ) {
         throw new UnauthorizedException('Invalid email or password');
       }
-      if (error.name === 'UserNotConfirmedException') {
-        throw new UnauthorizedException('Please confirm your email address before signing in');
+      if (
+        error instanceof UserNotConfirmedException ||
+        this.isCognitoError(error, 'UserNotConfirmedException')
+      ) {
+        throw new UnauthorizedException(
+          'Please confirm your email address before signing in',
+        );
       }
-      this.logger.error(`Login error: ${error.message}`, error.stack);
+      if (error instanceof Error) {
+        this.logger.error(`Login error: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`Login error: ${String(error)}`);
+      }
       throw error;
     }
   }
@@ -84,11 +153,18 @@ export class AuthService {
   }> {
     try {
       return await this.cognitoService.refreshToken(dto.refreshToken);
-    } catch (error) {
-      if (error.name === 'NotAuthorizedException') {
+    } catch (error: unknown) {
+      if (
+        error instanceof NotAuthorizedException ||
+        this.isCognitoError(error, 'NotAuthorizedException')
+      ) {
         throw new UnauthorizedException('Invalid or expired refresh token');
       }
-      this.logger.error(`Refresh token error: ${error.message}`, error.stack);
+      if (error instanceof Error) {
+        this.logger.error(`Refresh token error: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`Refresh token error: ${String(error)}`);
+      }
       throw error;
     }
   }
@@ -97,33 +173,60 @@ export class AuthService {
     try {
       await this.cognitoService.forgotPassword(dto.email);
       return {
-        message: 'If an account with this email exists, a password reset code has been sent.',
+        message:
+          'If an account with this email exists, a password reset code has been sent.',
       };
-    } catch (error) {
-      this.logger.error(`Forgot password error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Forgot password error: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this.logger.error(`Forgot password error: ${String(error)}`);
+      }
       // Return generic message to avoid email enumeration
       return {
-        message: 'If an account with this email exists, a password reset code has been sent.',
+        message:
+          'If an account with this email exists, a password reset code has been sent.',
       };
     }
   }
 
-  async confirmForgotPassword(dto: ConfirmForgotPasswordDto): Promise<{ message: string }> {
+  async confirmForgotPassword(
+    dto: ConfirmForgotPasswordDto,
+  ): Promise<{ message: string }> {
     try {
       await this.cognitoService.confirmForgotPassword(
         dto.email,
         dto.confirmationCode,
         dto.newPassword,
       );
-      return { message: 'Password reset successfully. You can now sign in with your new password.' };
-    } catch (error) {
-      if (error.name === 'CodeMismatchException') {
+      return {
+        message:
+          'Password reset successfully. You can now sign in with your new password.',
+      };
+    } catch (error: unknown) {
+      if (
+        error instanceof CodeMismatchException ||
+        this.isCognitoError(error, 'CodeMismatchException')
+      ) {
         throw new BadRequestException('Invalid confirmation code');
       }
-      if (error.name === 'ExpiredCodeException') {
+      if (
+        error instanceof ExpiredCodeException ||
+        this.isCognitoError(error, 'ExpiredCodeException')
+      ) {
         throw new BadRequestException('Confirmation code has expired');
       }
-      this.logger.error(`Confirm forgot password error: ${error.message}`, error.stack);
+      if (error instanceof Error) {
+        this.logger.error(
+          `Confirm forgot password error: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this.logger.error(`Confirm forgot password error: ${String(error)}`);
+      }
       throw error;
     }
   }
@@ -132,8 +235,12 @@ export class AuthService {
     try {
       await this.cognitoService.signOut(accessToken);
       return { message: 'Logged out successfully' };
-    } catch (error) {
-      this.logger.error(`Logout error: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(`Logout error: ${error.message}`, error.stack);
+      } else {
+        this.logger.error(`Logout error: ${String(error)}`);
+      }
       throw error;
     }
   }

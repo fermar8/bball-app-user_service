@@ -10,14 +10,4 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   @MinLength(2)
   @MaxLength(100)
   name?: string;
-
-  @ApiPropertyOptional({ example: 'Los Angeles' })
-  @IsOptional()
-  @IsString()
-  city?: string;
-
-  @ApiPropertyOptional({ example: 'Lakers' })
-  @IsOptional()
-  @IsString()
-  favoriteTeam?: string;
 }

@@ -10,12 +10,14 @@ const mockDynamoDbService = {
 };
 
 const mockConfigService = {
-  get: jest.fn().mockReturnValue('bball-app-data-consumption-teams-static-test'),
+  get: jest
+    .fn()
+    .mockReturnValue('bball-app-data-consumption-teams-static-test'),
 };
 
 const mockTeams = [
-  { teamId: 1, name: 'Los Angeles Lakers', conference: 'West', city: 'Los Angeles', division: 'Pacific' },
-  { teamId: 2, name: 'Boston Celtics', conference: 'East', city: 'Boston', division: 'Atlantic' },
+  { teamId: 1, name: 'Maccabi De Levantar' },
+  { teamId: 2, name: 'Los wenos' },
 ];
 
 describe('TeamsService', () => {
@@ -43,16 +45,9 @@ describe('TeamsService', () => {
 
     it('should filter by team name (case-insensitive)', async () => {
       mockDynamoDbService.scan.mockResolvedValue(mockTeams);
-      const result = await service.findAll({ name: 'lakers' });
+      const result = await service.findAll({ name: 'maccabi' });
       expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('Los Angeles Lakers');
-    });
-
-    it('should filter by conference (case-insensitive)', async () => {
-      mockDynamoDbService.scan.mockResolvedValue(mockTeams);
-      const result = await service.findAll({ conference: 'east' });
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('Boston Celtics');
+      expect(result[0].name).toBe('Maccabi De Levantar');
     });
 
     it('should return empty array when no teams match filter', async () => {

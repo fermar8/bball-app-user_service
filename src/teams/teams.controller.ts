@@ -29,11 +29,14 @@ export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all NBA teams' })
-  @ApiResponse({ status: 200, description: 'List of all NBA teams' })
+  @ApiOperation({ summary: 'Get all teams' })
+  @ApiResponse({ status: 200, description: 'List of teams' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiQuery({ name: 'name', required: false, description: 'Filter by team name' })
-  @ApiQuery({ name: 'conference', required: false, description: 'Filter by conference (East/West)' })
+  @ApiQuery({
+    name: 'name',
+    required: false,
+    description: 'Filter by team name',
+  })
   findAll(@Query() query: TeamQueryDto) {
     return this.teamsService.findAll(query);
   }

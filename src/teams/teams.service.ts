@@ -6,10 +6,6 @@ import { TeamQueryDto } from './dto/team-query.dto';
 export interface Team {
   teamId: number;
   name?: string;
-  abbreviation?: string;
-  city?: string;
-  conference?: string;
-  division?: string;
 }
 
 @Injectable()
@@ -21,21 +17,20 @@ export class TeamsService {
     private readonly dynamoDbService: DynamoDbService,
     private readonly configService: ConfigService,
   ) {
-    this.tableName = this.configService.get<string>('aws.dynamodb.teamsStaticTable');
+    this.tableName = this.configService.get<string>(
+      'aws.dynamodb.teamsStaticTable',
+    );
   }
 
   async findAll(query?: TeamQueryDto): Promise<Team[]> {
-    const items = await this.dynamoDbService.scan({ TableName: this.tableName });
+    const items = await this.dynamoDbService.scan({
+      TableName: this.tableName,
+    });
     let teams = items as Team[];
 
     if (query?.name) {
       teams = teams.filter((t) =>
         t.name?.toLowerCase().includes(query.name.toLowerCase()),
-      );
-    }
-    if (query?.conference) {
-      teams = teams.filter(
-        (t) => t.conference?.toLowerCase() === query.conference.toLowerCase(),
       );
     }
 

@@ -54,8 +54,9 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# Elastic IP for EC2
+# Elastic IP for EC2 (optional — allocate only when testing to avoid idle IPv4 charges)
 resource "aws_eip" "app_eip" {
+  count    = var.create_ec2_eip ? 1 : 0
   domain   = "vpc"
   instance = aws_instance.app_server.id
 
