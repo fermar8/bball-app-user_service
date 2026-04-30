@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Build outputs
+dist/
+build/
+
+# Tests
+coverage/
+test/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# CI/CD
+.github/
+
+# Infrastructure
+terraform/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Misc
+*.md
+!README.md
+.DS_Store
+.eslintrc.js
+.prettierrc
+tsconfig*.json
+nest-cli.json
+scripts/

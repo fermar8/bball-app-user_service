@@ -25,7 +25,17 @@ resource "aws_instance" "app_server" {
   iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
   key_name               = var.ec2_key_pair_name != "" ? var.ec2_key_pair_name : null
 
-  user_data = base64encode(templatefile("${path.module}/user_data.sh", {
+  lifecycle {
+    ignore_changes = [ami, user_data]
+  }
+
+  timeouts {
+    create = "10m"
+    update = "10m"
+    delete = "10m"
+  }
+
+  user_data = base64encode(templatefile("${path.module}/ec2_bootstrap_docker.sh", {
     environment       = var.environment
     app_port          = var.app_port
     aws_region        = var.aws_region
@@ -47,9 +57,10 @@ resource "aws_instance" "app_server" {
   tags = merge(var.tags, {
     Name        = "${var.project_name}-server-${var.environment}"
     Environment = var.environment
-    # Tag to identify if instance should be running automatically
-    AutoStart = var.ec2_auto_start ? "true" : "false"
+    AutoStart   = var.ec2_auto_start ? "true" : "false"
   })
+
+  depends_on = [aws_ssm_parameter.cloudwatch_config]
 }
 
 resource "aws_ec2_instance_state" "app_server" {

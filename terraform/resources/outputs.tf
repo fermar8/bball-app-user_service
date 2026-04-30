@@ -47,3 +47,13 @@ output "cloudwatch_log_group" {
   description = "CloudWatch log group for the application"
   value       = aws_cloudwatch_log_group.app_logs.name
 }
+
+output "ecr_repository_url" {
+  description = "ECR repository URL for Docker images"
+  value       = aws_ecr_repository.app.repository_url
+}
+
+output "ecr_repository_name" {
+  description = "ECR repository name"
+  value       = aws_ecr_repository.app.name
+}

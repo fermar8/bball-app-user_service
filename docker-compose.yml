@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: bball-app-user-service
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - AWS_REGION=${AWS_REGION:-eu-west-3}
+      - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+      - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
+      - DYNAMODB_USERS_TABLE=${DYNAMODB_USERS_TABLE}
+      - DYNAMODB_TEAMS_STATIC_TABLE=${DYNAMODB_TEAMS_STATIC_TABLE}
+      - CACHE_TTL=60
+      - THROTTLE_TTL=60
+      - THROTTLE_LIMIT=100
+      # Use host AWS credentials for local development
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/api/v1/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Development mode with hot reload
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: bball-app-user-service-dev
+    ports:
+      - '3000:3000'
+      - '9229:9229' # Debug port
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - AWS_REGION=${AWS_REGION:-eu-west-3}
+      - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+      - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
+      - DYNAMODB_USERS_TABLE=${DYNAMODB_USERS_TABLE}
+      - DYNAMODB_TEAMS_STATIC_TABLE=${DYNAMODB_TEAMS_STATIC_TABLE}
+      - CACHE_TTL=60
+      - THROTTLE_TTL=60
+      - THROTTLE_LIMIT=100
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run start:dev
+    profiles:
+      - dev
