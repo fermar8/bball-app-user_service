@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import * as jwt from 'jsonwebtoken';
-import jwksClient, { type JwksClient } from 'jwks-rsa';
+import { JwksClient } from 'jwks-rsa';
 
 export const IS_PUBLIC_KEY = 'isPublic';
 const PRODUCTION_NODE_ENV = 'production';
@@ -28,7 +28,7 @@ export class CognitoAuthGuard implements CanActivate {
     this.region = this.configService.get<string>('aws.region');
 
     if (this.userPoolId) {
-      this.jwksClient = jwksClient({
+      this.jwksClient = new JwksClient({
         jwksUri: `https://cognito-idp.${this.region}.amazonaws.com/${this.userPoolId}/.well-known/jwks.json`,
         cache: true,
         rateLimit: true,
