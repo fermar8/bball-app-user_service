@@ -51,59 +51,10 @@ jobs:
           path: dist/
           retention-days: 1
 
-  build-docker:
-    name: Build and Push Docker Image
+  provision-infrastructure:
+    name: Provision Infrastructure (Terraform)
     runs-on: ubuntu-latest
     needs: build-and-test
-    if: github.ref == 'refs/heads/main'
-    permissions:
-      id-token: write
-      contents: read
-    outputs:
-      image-tag: ${{ steps.meta.outputs.image-tag }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6.0.2
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.1.0
-        with:
-          role-to-assume: ${{ vars.AWS_PIPELINE_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION || 'eu-west-3' }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Docker metadata
-        id: meta
-        run: |
-          ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY=bball-app-user-service-nonlive
-          IMAGE_TAG=${{ github.sha }}
-          echo "image-tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          echo "image-url=${ECR_REGISTRY}/${ECR_REPOSITORY}" >> $GITHUB_OUTPUT
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ steps.meta.outputs.image-url }}:${{ steps.meta.outputs.image-tag }}
-            ${{ steps.meta.outputs.image-url }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64
-
-  deploy-nonlive:
-    name: Deploy to Nonlive
-    runs-on: ubuntu-latest
-    needs: [build-and-test, build-docker]
     if: github.ref == 'refs/heads/main'
     permissions:
       id-token: write
@@ -168,6 +119,74 @@ jobs:
             -var="create_ec2_eip=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.nonlive_testing_mode == 'true' || 'false' }}" \
             -auto-approve -no-color
 
+  build-docker:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: provision-infrastructure
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      image-tag: ${{ steps.meta.outputs.image-tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          role-to-assume: ${{ vars.AWS_PIPELINE_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'eu-west-3' }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Docker metadata
+        id: meta
+        run: |
+          ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY=bball-app-user-service-nonlive
+          IMAGE_TAG=${{ github.sha }}
+          echo "image-tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "image-url=${ECR_REGISTRY}/${ECR_REPOSITORY}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image-url }}:${{ steps.meta.outputs.image-tag }}
+            ${{ steps.meta.outputs.image-url }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  deploy-nonlive:
+    name: Deploy to Nonlive
+    runs-on: ubuntu-latest
+    needs: [build-and-test, build-docker]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          role-to-assume: ${{ vars.AWS_PIPELINE_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'eu-west-3' }}
+
       - name: Get ECR Repository URL
         id: ecr
         run: |
@@ -187,10 +206,62 @@ jobs:
             ${{ steps.ecr.outputs.url }} \
             ${{ needs.build-docker.outputs.image-tag }}
 
+  provision-infrastructure-live:
+    name: Provision Infrastructure (Terraform - Live)
+    runs-on: ubuntu-latest
+    needs: deploy-nonlive
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          role-to-assume: ${{ vars.AWS_PIPELINE_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'eu-west-3' }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ~1.0
+          terraform_wrapper: false
+
+      - name: Create backend config
+        working-directory: ./terraform/resources
+        run: |
+          cat > backend.hcl << EOF
+          bucket         = "${{ vars.TF_STATE_BUCKET }}"
+          key            = "resources/live/bball-app-user-service.tfstate"
+          region         = "${{ vars.AWS_REGION || 'eu-west-3' }}"
+          dynamodb_table = "${{ vars.TF_LOCK_TABLE }}"
+          encrypt        = true
+          EOF
+
+      - name: Terraform Init
+        working-directory: ./terraform/resources
+        run: terraform init -backend-config=backend.hcl
+
+      - name: Terraform Validate
+        working-directory: ./terraform/resources
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: ./terraform/resources
+        run: terraform plan -var-file="live.tfvars" -var='alarm_emails=${{ secrets.ALARM_EMAILS }}' -no-color
+
+      - name: Terraform Apply
+        working-directory: ./terraform/resources
+        run: terraform apply -var-file="live.tfvars" -var='alarm_emails=${{ secrets.ALARM_EMAILS }}' -auto-approve -no-color
+
   build-docker-live:
     name: Build and Push Docker Image (Live)
     runs-on: ubuntu-latest
-    needs: deploy-nonlive
+    needs: provision-infrastructure-live
     permissions:
       id-token: write
       contents: read
@@ -253,39 +324,6 @@ jobs:
         with:
           role-to-assume: ${{ vars.AWS_PIPELINE_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION || 'eu-west-3' }}
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: ~1.0
-          terraform_wrapper: false
-
-      - name: Create backend config
-        working-directory: ./terraform/resources
-        run: |
-          cat > backend.hcl << EOF
-          bucket         = "${{ vars.TF_STATE_BUCKET }}"
-          key            = "resources/live/bball-app-user-service.tfstate"
-          region         = "${{ vars.AWS_REGION || 'eu-west-3' }}"
-          dynamodb_table = "${{ vars.TF_LOCK_TABLE }}"
-          encrypt        = true
-          EOF
-
-      - name: Terraform Init
-        working-directory: ./terraform/resources
-        run: terraform init -backend-config=backend.hcl
-
-      - name: Terraform Validate
-        working-directory: ./terraform/resources
-        run: terraform validate
-
-      - name: Terraform Plan
-        working-directory: ./terraform/resources
-        run: terraform plan -var-file="live.tfvars" -var='alarm_emails=${{ secrets.ALARM_EMAILS }}' -no-color
-
-      - name: Terraform Apply
-        working-directory: ./terraform/resources
-        run: terraform apply -var-file="live.tfvars" -var='alarm_emails=${{ secrets.ALARM_EMAILS }}' -auto-approve -no-color
 
       - name: Get ECR Repository URL
         id: ecr
