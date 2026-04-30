@@ -168,7 +168,8 @@ jobs:
     needs: [build-and-test, build-docker]
     if: |
       github.ref == 'refs/heads/main' &&
-      (success() || needs.build-docker.result == 'skipped')
+      (success() || needs.build-docker.result == 'skipped') &&
+      (github.event_name != 'workflow_dispatch' || github.event.inputs.nonlive_testing_mode == 'true')
     permissions:
       id-token: write
       contents: read
@@ -206,7 +207,9 @@ jobs:
     name: Provision Infrastructure (Terraform - Live)
     runs-on: ubuntu-latest
     needs: deploy-nonlive
-    if: github.ref == 'refs/heads/main'
+    if: |
+      github.ref == 'refs/heads/main' &&
+      (success() || needs.deploy-nonlive.result == 'skipped')
     environment: production
     permissions:
       id-token: write
