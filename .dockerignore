@@ -35,8 +35,4 @@ terraform/
 *.md
 !README.md
 .DS_Store
-.eslintrc.js
-.prettierrc
-tsconfig*.json
-nest-cli.json
 scripts/
