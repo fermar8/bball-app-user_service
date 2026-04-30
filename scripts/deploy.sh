@@ -84,6 +84,9 @@ COMMAND_ID=$(aws ssm send-command \
   --instance-ids "$INSTANCE_ID" \
   --document-name "AWS-RunShellScript" \
   --parameters "commands=[
+    \"echo 'Configuring CloudWatch agent...'\",
+    \"/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c ssm:/bball-app/user-service/${ENVIRONMENT}/cloudwatch-config || echo 'CloudWatch config failed, continuing...'\",
+    \"systemctl start amazon-cloudwatch-agent || true\",
     \"echo 'Logging in to ECR...'\",
     \"aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPOSITORY_URL}\",
     \"echo 'Pulling Docker image: ${IMAGE_URL}...'\",
@@ -93,10 +96,10 @@ COMMAND_ID=$(aws ssm send-command \
     \"docker rm bball-app-user-service || true\",
     \"echo 'Starting new container...'\",
     \"docker run -d --name bball-app-user-service --env-file /opt/bball-app-user-service/.env -p 3000:3000 --restart unless-stopped ${IMAGE_URL}\",
-    \"echo 'Waiting for health check...'\",
-    \"sleep 10\",
+    \"echo 'Verifying container health...'\",
+    \"for i in 1 2 3; do sleep 5; if curl -f http://localhost:3000/api/v1/health 2>/dev/null; then echo 'Health check passed'; break; elif [ \\\$i -eq 3 ]; then echo 'Health check failed after 3 attempts'; docker logs --tail 100 bball-app-user-service; exit 1; else echo 'Health check attempt \\\$i failed, retrying...'; fi; done\",
     \"docker ps -a\",
-    \"echo 'Checking container logs...'\",
+    \"echo 'Container logs:'\",
     \"docker logs --tail 50 bball-app-user-service\"
   ]" \
   --query "Command.CommandId" \
