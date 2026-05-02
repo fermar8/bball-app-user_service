@@ -17,9 +17,7 @@ export class TeamsService {
     private readonly dynamoDbService: DynamoDbService,
     private readonly configService: ConfigService,
   ) {
-    this.tableName = this.configService.get<string>(
-      'aws.dynamodb.teamsStaticTable',
-    );
+    this.tableName = this.configService.get<string>('aws.dynamodb.teamsTable');
   }
 
   async findAll(query?: TeamQueryDto): Promise<Team[]> {

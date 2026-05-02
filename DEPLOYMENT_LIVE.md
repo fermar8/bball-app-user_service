@@ -94,7 +94,7 @@ AWS_REGION=eu-west-3
 COGNITO_USER_POOL_ID=$LIVE_USER_POOL_ID
 COGNITO_CLIENT_ID=$LIVE_CLIENT_ID
 DYNAMODB_USERS_TABLE=bball-app-user-service-users-live
-DYNAMODB_TEAMS_STATIC_TABLE=bball-app-data-consumption-teams-static-live
+DYNAMODB_TEAMS_TABLE=bball-app-user-service-teams-live
 CACHE_TTL=300
 THROTTLE_TTL=60
 THROTTLE_LIMIT=100
@@ -268,8 +268,8 @@ Verify that:
 | `AWS_REGION`                  | `eu-west-3`                                    | AWS Region                           |
 | `COGNITO_USER_POOL_ID`        | _Get in step 4_                                | Live Cognito pool                    |
 | `COGNITO_CLIENT_ID`           | _Get in step 4_                                | Live Cognito client                  |
-| `DYNAMODB_USERS_TABLE`        | `bball-app-user-service-users-live`            | DynamoDB table                       |
-| `DYNAMODB_TEAMS_STATIC_TABLE` | `bball-app-data-consumption-teams-static-live` | DynamoDB table                       |
+| `DYNAMODB_USERS_TABLE`        | `bball-app-user-service-users-live`            | DynamoDB users table                 |
+| `DYNAMODB_TEAMS_TABLE`        | `bball-app-user-service-teams-live`            | DynamoDB user teams table            |
 | `CACHE_TTL`                   | `300`                                          | Cache TTL (5 min)                    |
 | `THROTTLE_TTL`                | `60`                                           | Rate limit TTL                       |
 | `THROTTLE_LIMIT`              | `100`                                          | Requests/min limit                   |

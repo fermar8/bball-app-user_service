@@ -23,9 +23,22 @@ export class DynamoDbService {
   private readonly docClient: DynamoDBDocumentClient;
 
   constructor(private readonly configService: ConfigService) {
-    const client = new DynamoDBClient({
+    const clientConfig: any = {
       region: this.configService.get<string>('aws.region'),
-    });
+    };
+
+    // Use local DynamoDB endpoint in development if configured
+    const dynamoEndpoint = process.env.AWS_DYNAMODB_ENDPOINT;
+    if (dynamoEndpoint) {
+      this.logger.log(`Using local DynamoDB endpoint: ${dynamoEndpoint}`);
+      clientConfig.endpoint = dynamoEndpoint;
+      clientConfig.credentials = {
+        accessKeyId: 'dummy',
+        secretAccessKey: 'dummy',
+      };
+    }
+
+    const client = new DynamoDBClient(clientConfig);
     this.docClient = DynamoDBDocumentClient.from(client, {
       marshallOptions: {
         removeUndefinedValues: true,

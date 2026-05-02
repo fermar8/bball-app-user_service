@@ -11,9 +11,9 @@ export default () => ({
       usersTable:
         process.env.DYNAMODB_USERS_TABLE ||
         'bball-app-user-service-users-nonlive',
-      teamsStaticTable:
-        process.env.DYNAMODB_TEAMS_STATIC_TABLE ||
-        'bball-app-data-consumption-teams-static-nonlive',
+      teamsTable:
+        process.env.DYNAMODB_TEAMS_TABLE ||
+        'bball-app-user-service-teams-nonlive',
     },
   },
   cache: {

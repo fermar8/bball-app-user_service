@@ -27,7 +27,10 @@ export class CognitoAuthGuard implements CanActivate {
     this.userPoolId = this.configService.get<string>('aws.cognito.userPoolId');
     this.region = this.configService.get<string>('aws.region');
 
-    if (this.userPoolId) {
+    // Skip JWKS client initialization when using local Cognito
+    const isLocalCognito = !!process.env.AWS_COGNITO_ENDPOINT;
+
+    if (this.userPoolId && !isLocalCognito) {
       this.jwksClient = new JwksClient({
         jwksUri: `https://cognito-idp.${this.region}.amazonaws.com/${this.userPoolId}/.well-known/jwks.json`,
         cache: true,

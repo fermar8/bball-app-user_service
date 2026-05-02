@@ -17,7 +17,12 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "local:up": "docker-compose --env-file .env.local --profile local up -d",
+    "local:down": "docker-compose --env-file .env.local --profile local down",
+    "local:logs": "docker-compose --env-file .env.local --profile local logs -f app-dev",
+    "local:init-db": "ts-node scripts/init-local-db.ts",
+    "local:dev": "npm run local:up && timeout /t 5 /nobreak && npm run local:init-db && docker-compose --env-file .env.local --profile local logs -f app-dev"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch-logs": "^3.600.0",

@@ -15,18 +15,23 @@ import {
   UsernameExistsException,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { CognitoService } from '../aws/cognito/cognito.service';
+import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ConfirmRegistrationDto } from './dto/confirm-registration.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ConfirmForgotPasswordDto } from './dto/confirm-forgot-password.dto';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
-  constructor(private readonly cognitoService: CognitoService) {}
+  constructor(
+    private readonly cognitoService: CognitoService,
+    private readonly usersService: UsersService,
+  ) {}
 
   private isCognitoError(error: unknown, errorName: string): boolean {
     return (
@@ -119,7 +124,27 @@ export class AuthService {
     expiresIn: number;
   }> {
     try {
-      return await this.cognitoService.signIn(dto.email, dto.password);
+      const tokens = await this.cognitoService.signIn(dto.email, dto.password);
+
+      // Create user in DynamoDB on first login if doesn't exist
+      const decoded = jwt.decode(tokens.idToken) as any;
+      if (decoded?.sub) {
+        try {
+          await this.usersService.findOne(decoded.sub);
+        } catch {
+          // User doesn't exist in DynamoDB, create it
+          await this.usersService.create(
+            {
+              email: decoded.email || dto.email,
+              name: decoded.name || 'User',
+            },
+            decoded.sub,
+          );
+          this.logger.log(`Created DynamoDB user record for ${decoded.sub}`);
+        }
+      }
+
+      return tokens;
     } catch (error: unknown) {
       if (
         error instanceof NotAuthorizedException ||

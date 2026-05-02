@@ -23,7 +23,7 @@ This service manages user authentication and profiles for the Basketball App. It
 
 - **AWS Cognito** — user registration, login, and JWT issuance
 - **DynamoDB** — user profile storage (`bball-app-user-service-users-<env>`)
-- **DynamoDB (cross-service)** — read access to `bball-app-data-consumption-teams-static-<env>`
+- **DynamoDB** — user teams storage (`bball-app-user-service-teams-<env>`)
 - **CloudWatch** — structured application logs and metrics
 
 ---
@@ -78,7 +78,7 @@ npm run build
 | `COGNITO_USER_POOL_ID`        | Cognito User Pool ID           | `eu-west-3_abc123`                                |
 | `COGNITO_CLIENT_ID`           | Cognito App Client ID          | `abc123xyz`                                       |
 | `DYNAMODB_USERS_TABLE`        | DynamoDB users table name      | `bball-app-user-service-users-nonlive`            |
-| `DYNAMODB_TEAMS_STATIC_TABLE` | Teams static table (read-only) | `bball-app-data-consumption-teams-static-nonlive` |
+| `DYNAMODB_TEAMS_TABLE`        | DynamoDB user teams table name | `bball-app-user-service-teams-nonlive`            |
 | `CACHE_TTL`                   | Cache TTL in seconds           | `60`                                              |
 | `THROTTLE_TTL`                | Rate-limit window in seconds   | `60`                                              |
 | `THROTTLE_LIMIT`              | Max requests per window        | `100`                                             |

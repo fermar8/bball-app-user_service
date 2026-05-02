@@ -18,6 +18,10 @@ lerna-debug.log*
 .env.development
 .env.test
 .env.production
+.env.local
+
+# Local development data
+.cognito
 
 # temp directory
 .temp

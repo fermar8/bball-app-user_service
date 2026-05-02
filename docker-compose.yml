@@ -1,6 +1,43 @@
-version: '3.8'
-
 services:
+  # Local DynamoDB for development
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb-local
+    ports:
+      - '8000:8000'
+    command: '-jar DynamoDBLocal.jar -sharedDb'
+    profiles:
+      - local
+
+  # DynamoDB Admin UI
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin:latest
+    container_name: dynamodb-admin
+    ports:
+      - '8001:8001'
+    environment:
+      - DYNAMO_ENDPOINT=http://dynamodb-local:8000
+      - AWS_REGION=eu-west-3
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+    depends_on:
+      - dynamodb-local
+    profiles:
+      - local
+
+  # Local Cognito for development
+  cognito-local:
+    image: jagregory/cognito-local:latest
+    container_name: cognito-local
+    ports:
+      - '9229:9229'
+    environment:
+      - COGNITO_LOCAL_DATA_PATH=/app/.cognito
+    volumes:
+      - ./.cognito:/app/.cognito
+    profiles:
+      - local
+
   app:
     build:
       context: .
@@ -16,11 +53,10 @@ services:
       - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
       - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
       - DYNAMODB_USERS_TABLE=${DYNAMODB_USERS_TABLE}
-      - DYNAMODB_TEAMS_STATIC_TABLE=${DYNAMODB_TEAMS_STATIC_TABLE}
+      - DYNAMODB_TEAMS_TABLE=${DYNAMODB_TEAMS_TABLE}
       - CACHE_TTL=60
       - THROTTLE_TTL=60
       - THROTTLE_LIMIT=100
-      # Use host AWS credentials for local development
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
@@ -37,8 +73,10 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    profiles:
+      - prod
 
-  # Development mode with hot reload
+  # Development mode with hot reload and local AWS services
   app-dev:
     build:
       context: .
@@ -47,24 +85,38 @@ services:
     container_name: bball-app-user-service-dev
     ports:
       - '3000:3000'
-      - '9229:9229' # Debug port
+      - '9230:9230' # Debug port (changed to avoid conflict with cognito-local)
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - AWS_REGION=${AWS_REGION:-eu-west-3}
+      - AWS_REGION=eu-west-3
+      
+      # Local AWS endpoints (only used when running with --profile local)
+      - AWS_DYNAMODB_ENDPOINT=${AWS_DYNAMODB_ENDPOINT:-}
+      - AWS_COGNITO_ENDPOINT=${AWS_COGNITO_ENDPOINT:-}
+      
+      # Cognito configuration
       - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
       - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
+      
+      # DynamoDB tables
       - DYNAMODB_USERS_TABLE=${DYNAMODB_USERS_TABLE}
-      - DYNAMODB_TEAMS_STATIC_TABLE=${DYNAMODB_TEAMS_STATIC_TABLE}
+      - DYNAMODB_TEAMS_TABLE=${DYNAMODB_TEAMS_TABLE}
+      
+      # AWS credentials (dummy for local, real for AWS)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-dummy}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-dummy}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}
+      
       - CACHE_TTL=60
       - THROTTLE_TTL=60
       - THROTTLE_LIMIT=100
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
     volumes:
       - .:/app
       - /app/node_modules
     command: npm run start:dev
+    depends_on:
+      - dynamodb-local
+      - cognito-local
     profiles:
-      - dev
+      - local

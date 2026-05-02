@@ -46,8 +46,9 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Current user profile' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   getMe(@CurrentUser() user: any) {
-    const email = user?.email || user?.['cognito:username'];
-    return this.usersService.findByEmail(email);
+    // Access token contains 'sub' (userId), not email
+    const userId = user?.sub || user?.username;
+    return this.usersService.findOne(userId);
   }
 
   @Get(':id')

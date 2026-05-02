@@ -63,7 +63,7 @@ export class UsersService {
     return items.length > 0 ? (items[0] as User) : null;
   }
 
-  async create(dto: CreateUserDto): Promise<User> {
+  async create(dto: CreateUserDto, userId?: string): Promise<User> {
     const existing = await this.findByEmail(dto.email).catch(() => null);
     if (existing) {
       throw new ConflictException(
@@ -73,7 +73,7 @@ export class UsersService {
 
     const now = new Date().toISOString();
     const user: User = {
-      userId: crypto.randomUUID(),
+      userId: userId || crypto.randomUUID(),
       ...dto,
       createdAt: now,
       updatedAt: now,

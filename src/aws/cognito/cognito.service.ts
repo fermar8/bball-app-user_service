@@ -19,9 +19,22 @@ export class CognitoService {
   private readonly clientId: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.client = new CognitoIdentityProviderClient({
+    const clientConfig: any = {
       region: this.configService.get<string>('aws.region'),
-    });
+    };
+
+    // Use local Cognito endpoint in development if configured
+    const cognitoEndpoint = process.env.AWS_COGNITO_ENDPOINT;
+    if (cognitoEndpoint) {
+      this.logger.log(`Using local Cognito endpoint: ${cognitoEndpoint}`);
+      clientConfig.endpoint = cognitoEndpoint;
+      clientConfig.credentials = {
+        accessKeyId: 'dummy',
+        secretAccessKey: 'dummy',
+      };
+    }
+
+    this.client = new CognitoIdentityProviderClient(clientConfig);
     this.userPoolId = this.configService.get<string>('aws.cognito.userPoolId');
     this.clientId = this.configService.get<string>('aws.cognito.clientId');
   }
