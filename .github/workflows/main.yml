@@ -116,8 +116,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-and-test, provision-infrastructure]
     if: |
-      github.ref == 'refs/heads/main' && 
-      (success() || needs.provision-infrastructure.result == 'skipped')
+      github.ref == 'refs/heads/main' &&
+      needs.build-and-test.result == 'success' &&
+      (needs.provision-infrastructure.result == 'success' || needs.provision-infrastructure.result == 'skipped')
     permissions:
       id-token: write
       contents: read
@@ -168,7 +169,8 @@ jobs:
     needs: [build-and-test, build-docker]
     if: |
       github.ref == 'refs/heads/main' &&
-      (success() || needs.build-docker.result == 'skipped') &&
+      needs.build-and-test.result == 'success' &&
+      (needs.build-docker.result == 'success' || needs.build-docker.result == 'skipped') &&
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.nonlive_testing_mode == 'true'
     permissions:
@@ -261,7 +263,9 @@ jobs:
     name: Build and Push Docker Image (Live)
     runs-on: ubuntu-latest
     needs: [deploy-nonlive, provision-infrastructure-live]
-    if: success() || needs.provision-infrastructure-live.result == 'skipped'
+    if: |
+      (needs.deploy-nonlive.result == 'success' || needs.deploy-nonlive.result == 'skipped') &&
+      (needs.provision-infrastructure-live.result == 'success' || needs.provision-infrastructure-live.result == 'skipped')
     permissions:
       id-token: write
       contents: read
